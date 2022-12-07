@@ -21,73 +21,54 @@ int main(int argc, char *argv[])
     printf("Could not open %s.\n", argv[1]);
     return 1;
  }
- BYTE *buffer = malloc(sizeof(uint8_t) * BLOCK_SIZE);
+//  BYTE *buffer = malloc(sizeof(uint8_t) * BLOCK_SIZE);
+ BYTE buffer[BLOCK_SIZE];
 
- if (buffer == NULL)
- {
-    printf("Not enough memory to store the block.\n");
-    return 1;
-  }
-
-
- char *NAME_FILE = malloc(sizeof(char) * 4);
- if (NAME_FILE == NULL)
- {
-    printf("Not enough memory to store %s.\n", NAME_FILE);
-    return 2;
- }
-
+//  if (buffer == NULL)
+//  {
+//     printf("Not enough memory to store the block.\n");
+//     return 1;
+//   }
 
  int v = 0;
 
- BYTE *tmpbuf = buffer;
+//  BYTE *tmpbuf = malloc(sizeof(uint8_t));;
  FILE *tmpimg;
-
+char NAME_FILE[8];
  int check = 0;
 
- int p = 0;
-
- while (fread(buffer, 1, BLOCK_SIZE, file) == BLOCK_SIZE)
+ while (fread(&buffer, 1, BLOCK_SIZE, file) == BLOCK_SIZE)
  {
        for (int i = 0; i < BLOCK_SIZE; i++)
        {
-           if (buffer[i] == 0xff || buffer[i+1] == 0xd8 || buffer[i+2] == 0xff || (buffer[i+3] & 0xf0) == 0xe0)
+           if (buffer[i] == 0xff && buffer[i+1] == 0xd8 && buffer[i+2] == 0xff && (buffer[i+3] & 0xf0) == 0xe0)
            {
-               // case : The first jpeg
-               if (v == 0)
+               if (v > 0)
                {
-                   sprintf(NAME_FILE,"%03i.jpg",0);
-                   FILE *imgfirst = fopen(NAME_FILE,"w");
-                   if (imgfirst == NULL)
-                   {
-                       printf("Could not be created %s.\n", NAME_FILE);
-                       fclose(file);
-                       return 4;
-                   }
-
-                   tmpbuf = &buffer[i];
-                   tmpimg = imgfirst;
-                   fwrite(tmpbuf, sizeof(uint8_t), 1, tmpimg);
+                  fclose(tmpimg);
                }
 
-              // case: find another new jpg after the 1st
-               else
+               // char *NAME_FILE = malloc(sizeof(char) * 4);
+               // if (NAME_FILE == NULL)
+               // {
+               //    printf("Not enough memory to store %s.\n", NAME_FILE);
+               //    return 2;
+               // }
+
+               sprintf(NAME_FILE,"%03i.jpg",v);
+
+               FILE *img = fopen(NAME_FILE,"w");
+               // free(NAME_FILE);
+               if (img == NULL)
                {
-                   fclose(tmpimg);
-                   sprintf(NAME_FILE,"%03i.jpg",v);
-
-                   FILE *imgnext = fopen(NAME_FILE,"w");
-                   if (imgnext == NULL)
-                   {
-                      printf("Could not be created %s.\n", NAME_FILE);
-                      fclose(file);
-                      return 5;
-                   }
-
-                  tmpimg = imgnext;
-                  tmpbuf = &buffer[i];
-                  fwrite(tmpbuf, sizeof(uint8_t), 1, tmpimg);
+                  printf("Could not be created %s.\n", NAME_FILE);
+                  fclose(file);
+                  return 5;
                }
+
+               tmpimg = img;
+               // tmpbuf = &buffer[i];
+               fwrite(&buffer[i], sizeof(uint8_t), 1, tmpimg);
 
                v++;
 
@@ -96,16 +77,16 @@ int main(int argc, char *argv[])
 
            else  if (check == 1) // no new jpeg and continue write on the current jpeg.
            {
-                  tmpbuf = &buffer[i];
-                  fwrite(tmpbuf, sizeof(uint8_t), 1, tmpimg);
+                  // tmpbuf = &buffer[i];
+                  fwrite(&buffer[i], sizeof(uint8_t), 1, tmpimg);
             }
 
        }
 
  }
 
-free(buffer);
-free(NAME_FILE);
+fclose(file);
+// free(buffer);
 fclose(tmpimg);
 return 0;
 
